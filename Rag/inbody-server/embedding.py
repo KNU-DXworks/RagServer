@@ -8,7 +8,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 embedding = Flask(__name__)
 client = bigquery.Client()
 dataset_id = "dxworks-rag-ai.inbody_vectors"
-table_id = "inbody_embedding"
+table_id = "inbody_vector"
 
 #BigQuery 테이블 경로 지정
 TABLE_ID = f"{dataset_id}.{table_id}"
@@ -87,6 +87,37 @@ def recommend_similar_inbodies():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+#더미 인바디 데이터 넣기.
+@embedding.route("/api/main/put/inbodydata", methods=["POST"])
+def insert_inbody_data():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No JSON payload provided"}), 400
+
+        user_id = data.get("userId")
+        vector = data.get("vector")
+
+        if user_id is None or vector is None:
+            return jsonify({"error": "userId와 vector는 필수입니다."}), 400
+
+        # BigQuery에 삽입할 행 구성
+        rows_to_insert = [{
+            "userId": user_id,
+            "vector": vector
+        }]
+
+        errors = client.insert_rows_json(TABLE_ID, rows_to_insert)
+
+        if errors == []:
+            return jsonify({"status": "success", "message": "BigQuery에 새로운 데이터 삽입 성공"}), 200
+        else:
+            return jsonify({"status": "error", "errors": errors}), 500
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     embedding.run(host = "127.0.0.1", port=5000)
