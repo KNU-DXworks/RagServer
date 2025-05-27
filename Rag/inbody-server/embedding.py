@@ -77,13 +77,13 @@ def recommend_similar_inbodies():
         similarities = cosine_similarity(goal_vector_np, all_vectors)[0]
 
         # 유사도 top3
-        top_indices = np.argsort(similarities)[-3:][::-1]
+        top_indices = np.argsort(similarities)[-10:][::-1]
         top_users = [
             {"userId": int(user_ids[i]), "similarity": float(similarities[i])}
             for i in top_indices
         ]
 
-        return jsonify({"top3": top_users}),200
+        return jsonify({"top10": top_users}),200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

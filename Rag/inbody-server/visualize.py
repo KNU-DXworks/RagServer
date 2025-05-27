@@ -2,9 +2,12 @@ from flask import Flask, request, jsonify,send_file,after_this_request
 from google.cloud import bigquery
 from sklearn.decomposition import PCA
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import tempfile
 import os
+from sklearn.preprocessing import StandardScaler
 
 visualize = Flask(__name__)
 client = bigquery.Client()
@@ -28,16 +31,44 @@ def fetch_vectors():
 
 
 def generate_3d_plot(vectors,goal_vector=None):
+
+    #벡터 정규화
+    scaler = StandardScaler()
+    vectors_scaled = scaler.fit_transform(vectors)
+
+    if goal_vector is not None:
+        goal_vector_scaled = scaler.transform([goal_vector])
+    else:
+        goal_vector_scaled = None
+
     pca = PCA(n_components=3)
-    reduced = pca.fit_transform(vectors)
+    reduced = pca.fit_transform(vectors_scaled)
+
+    if goal_vector_scaled is not None:
+        goal_reduced = pca.transform(goal_vector_scaled)
+        all_points = np.vstack([reduced, goal_reduced])
+    else:
+        goal_reduced = None
+        all_points = reduced
 
     fig = plt.figure()
     ax = fig.add_subplot(111,projection='3d')
     ax.scatter(reduced[:,0],reduced[:,1],reduced[:,2],label = 'Users', c = 'blue')
 
-    if goal_vector is not None:
-        goal_reduced = pca.transform([goal_vector])
+    if goal_vector_scaled is not None:
+        goal_reduced = pca.transform(goal_vector_scaled)
         ax.scatter(goal_reduced[:,0],goal_reduced[:,1],goal_reduced[:,2],label = 'Goal',c='red',marker = 'x',s=100)
+    
+     # 축 범위 조절
+    x_min, x_max = all_points[:, 0].min(), all_points[:, 0].max()
+    y_min, y_max = all_points[:, 1].min(), all_points[:, 1].max()
+    z_min, z_max = all_points[:, 2].min(), all_points[:, 2].max()
+    padding = 0.1
+
+    ax.set_xlim(x_min - padding, x_max + padding)
+    ax.set_ylim(y_min - padding, y_max + padding)
+    ax.set_zlim(z_min - padding, z_max + padding)
+
 
     ax.set_title("3D Visualization of inbody vectors")
     ax.legend()

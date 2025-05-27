@@ -1,0 +1,11 @@
+# IntelliJ IDEA 관련 설정 파일 무시
+.idea/
+
+# OS별 임시 파일 무시 (예시)
+.DS_Store
+Thumbs.db
+
+# 빌드 폴더, 환경설정 등 필요에 따라 추가 가능
+target/
+build/
+*.log
